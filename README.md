@@ -12,27 +12,71 @@ Agent ──POST /ask──► rakazo-bridge ──POST /api/v1/bots/:id/webhook
 
 There are no changes to Rakazo and no npm dependencies. It needs Node 18 or newer.
 
-## Quick start
+## Setup guide
+
+This guide covers the recommended setup: the bridge runs on the **same host as a self-hosted Rakazo** (docker compose install), and agents reach it over a **private network** such as Tailscale. Nothing new is exposed to the internet.
+
+### 1. Install and configure the bridge
 
 ```bash
-git clone <this repo> rakazo-bridge && cd rakazo-bridge
-cp .env.example .env            # fill CALLER_TOKENS and BOT_TOKEN (openssl rand -hex 32)
-cp bots.example.json bots.json  # fill rakazoUrl and your bots
-npm start                       # or: docker compose -f compose.example.yml up -d
+git clone <this repo> ~/rakazo-bridge && cd ~/rakazo-bridge
+cp .env.example .env
+cp bots.example.json bots.json
+chmod 600 .env bots.json
 ```
 
-## Set up each bot in Rakazo
+In `.env`:
+- Set `CALLER_TOKENS` and `BOT_TOKEN`. Generate each one with `openssl rand -hex 32`.
+- Set `PUBLIC_URL` to the host's private IP, for example `http://100.x.y.z:7480`. Rakazo's containers use this address to reach the bridge.
+- Keep `RAKAZO_URL=http://127.0.0.1:3100`, which is where the compose install publishes the api.
 
-1. **Webhook routine.** In the bot's routines, add a routine that runs **on webhook**. Copy its URL (the `botId` is in `/api/v1/bots/<botId>/webhook`) and its **signing secret** into `bots.json`. Suggested routine instructions:
+### 2. Let Rakazo call private addresses
+
+In the `.env` of your **Rakazo** install, set `MCP_ALLOW_PRIVATE_ENDPOINT=true`, then restart the api and worker. See [Letting Rakazo reach a private bridge](#letting-rakazo-reach-a-private-bridge).
+
+### 3. Run the bridge as a service
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp deploy/rakazo-bridge.service ~/.config/systemd/user/
+systemctl --user daemon-reload && systemctl --user enable --now rakazo-bridge
+loginctl enable-linger "$USER"     # keep it running after logout / across reboots
+curl -s http://<host-private-ip>:7480/health   # → {"ok":true}
+```
+
+If you'd rather use Docker, run `docker compose -f compose.example.yml up -d`, then change the port mapping to your private IP.
+
+### 4. Set up each bot in Rakazo
+
+1. **Find the bot ID.** Open the bot's **webhook routine**: the ID is the `<botId>` part of `/api/v1/bots/<botId>/webhook`.
+2. **Webhook routine.** In the bot's routines, add a routine that runs **on webhook**. Copy the `botId` and the routine's **signing secret** into `bots.json` under a short name such as `"rem"`. Agents use that name to address the bot. Suggested routine instructions:
 
    > This is a message from an external agent. Read `message`, answer it, then call `reply_to_external_agent` with the same `request_id` and your full answer as `text`. Always reply, even if you can't help.
 
-2. **Reply tool.** Under **Integrations**, add an **OpenAPI** source:
+3. **Reply tool.** Do this once for all bots. Under **Integrations**, add an **OpenAPI** source:
    - URL: `<PUBLIC_URL>/openapi.json`
    - Auth: bearer token = your `BOT_TOKEN`
    - Limit it to the bots you're bridging.
+4. **Approval.** Webhook runs follow your approval mode. Add `reply_to_external_agent` to the bot's **Always allow** list, or every reply will wait for a human.
+5. **Reload the bridge.** Run `systemctl --user restart rakazo-bridge` after every change to `bots.json`.
 
-3. **Approval.** Webhook runs follow your approval mode. Add `reply_to_external_agent` to **Always allow**, or every reply will wait for a human.
+### 5. Test it, then hand it to your agent
+
+```bash
+set -a; . ./.env; set +a
+BRIDGE_TOKEN="${CALLER_TOKENS%%,*}" node bin/rakazo-ask.mjs rem "Connection test, reply with one sentence."
+```
+
+Once the bot's reply prints, give your agent the bridge URL (`http://<host-private-ip>:7480`) and one of the `CALLER_TOKENS`. The agent can then use either the HTTP API or the CLI over SSH, as described below.
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| `502 Rakazo webhook returned 401` | Wrong `webhookSecret` or `botId` in `bots.json` |
+| Every `/ask` ends as `pending` | The bot didn't call the reply tool. Check the routine instructions, that the OpenAPI source is assigned to the bot, and **Always allow** |
+| Rakazo can't add the OpenAPI source | `MCP_ALLOW_PRIVATE_ENDPOINT` isn't set, or the api/worker weren't restarted after setting it |
+| `401` from the bridge | The caller is using `BOT_TOKEN`, or the bot is using a caller token. They're separate |
 
 ### Letting Rakazo reach a private bridge
 
