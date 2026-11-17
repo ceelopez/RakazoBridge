@@ -1,11 +1,13 @@
-# rakazo-bridge
+# RakazoBridge
 
 Let external AI agents (or scripts) **message your self-hosted [Rakazo](https://github.com/elie222/rakazo) bots and get the reply back**, over plain HTTP or a CLI.
 
-Rakazo bots can already be started by a webhook, but the webhook only returns a run id, not the bot's answer. rakazo-bridge closes the loop:
+So far I have tested it with Muse AI and Grok Bot. 
+
+Rakazo bots can already be started by a webhook, but the webhook only returns a run id, not the bot's answer. RakazoBridge closes the loop:
 
 ```
-Agent ──POST /ask──► rakazo-bridge ──POST /api/v1/bots/:id/webhook──► Rakazo bot
+Agent ──POST /ask──► RakazoBridge ──POST /api/v1/bots/:id/webhook──► Rakazo bot
   ▲                     │ (holds the request open)                        │
   └────── reply ────────┘◄──── POST /reply  (OpenAPI tool the bot calls) ─┘
 ```
@@ -19,7 +21,7 @@ This guide covers the recommended setup: the bridge runs on the **same host as a
 ### 1. Install and configure the bridge
 
 ```bash
-git clone <this repo> ~/rakazo-bridge && cd ~/rakazo-bridge
+git clone <this repo> ~/RakazoBridge && cd ~/RakazoBridge
 cp .env.example .env
 cp bots.example.json bots.json
 chmod 600 .env bots.json
@@ -38,8 +40,8 @@ In the `.env` of your **Rakazo** install, set `MCP_ALLOW_PRIVATE_ENDPOINT=true`,
 
 ```bash
 mkdir -p ~/.config/systemd/user
-cp deploy/rakazo-bridge.service ~/.config/systemd/user/
-systemctl --user daemon-reload && systemctl --user enable --now rakazo-bridge
+cp deploy/RakazoBridge.service ~/.config/systemd/user/
+systemctl --user daemon-reload && systemctl --user enable --now RakazoBridge
 loginctl enable-linger "$USER"     # keep it running after logout / across reboots
 curl -s http://<host-private-ip>:7480/health   # → {"ok":true}
 ```
@@ -58,7 +60,7 @@ If you'd rather use Docker, run `docker compose -f compose.example.yml up -d`, t
    - Auth: bearer token = your `BOT_TOKEN`
    - Limit it to the bots you're bridging.
 4. **Approval.** Webhook runs follow your approval mode. Add `reply_to_external_agent` to the bot's **Always allow** list, or every reply will wait for a human.
-5. **Reload the bridge.** Run `systemctl --user restart rakazo-bridge` after every change to `bots.json`.
+5. **Reload the bridge.** Run `systemctl --user restart RakazoBridge` after every change to `bots.json`.
 
 ### 5. Test it, then hand it to your agent
 
@@ -131,7 +133,7 @@ export BRIDGE_URL=http://127.0.0.1:7480 BRIDGE_TOKEN=…
 ./bin/rakazo-ask.mjs --list
 ./bin/rakazo-ask.mjs assistant "Summarize your last run"
 echo "long prompt…" | ./bin/rakazo-ask.mjs assistant
-# remote agent: ssh myhost 'BRIDGE_TOKEN=… rakazo-bridge/bin/rakazo-ask.mjs assistant "hi"'
+# remote agent: ssh myhost 'BRIDGE_TOKEN=… RakazoBridge/bin/rakazo-ask.mjs assistant "hi"'
 ```
 
 The CLI keeps polling pending answers for up to `RAKAZO_ASK_MAX_WAIT_S` (600 by default).
