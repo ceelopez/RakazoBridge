@@ -4,10 +4,20 @@
   "description": "Let external AI agents message self-hosted Rakazo bots over HTTP or CLI and get replies back synchronously.",
   "type": "module",
   "license": "MIT",
-  "engines": { "node": ">=18" },
-  "bin": { "rakazo-ask": "bin/rakazo-ask.mjs", "rakazo-bridge": "server.mjs" },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "rakazo-ask": "bin/rakazo-ask.mjs",
+    "rakazo-bridge": "server.mjs"
+  },
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test 'test/**/*.test.mjs'"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ceelopez/RakazoBridge.git"
+  },
+  "homepage": "https://github.com/ceelopez/RakazoBridge"
 }

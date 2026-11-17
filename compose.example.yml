@@ -1,6 +1,6 @@
 # docker compose -f compose.example.yml up -d
 services:
-  rakazo-bridge:
+  rakazobridge:
     build: .
     restart: unless-stopped
     env_file: .env

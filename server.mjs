@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// rakazo-bridge: lets external agents message Rakazo bots and get replies synchronously.
+// RakazoBridge: lets external agents message Rakazo bots and get replies synchronously.
 // Zero dependencies; Node >= 18.
 import http from "node:http";
 import { randomUUID, timingSafeEqual } from "node:crypto";
@@ -52,7 +52,7 @@ async function readJson(req, limit = 256 * 1024) {
 export function openapi() {
   return {
     openapi: "3.0.3",
-    info: { title: "rakazo-bridge reply", version: "0.1.0", description: "Send your answer back to the external agent that messaged you." },
+    info: { title: "RakazoBridge reply", version: "0.1.0", description: "Send your answer back to the external agent that messaged you." },
     servers: [{ url: PUBLIC_URL }],
     components: { securitySchemes: { bearer: { type: "http", scheme: "bearer" } } },
     security: [{ bearer: [] }],
@@ -195,5 +195,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const config = loadConfig();
   const bridge = createBridge({ config });
   http.createServer(bridge.handle).listen(PORT, HOST, () =>
-    console.log(`rakazo-bridge on http://${HOST}:${PORT} → ${config.rakazoUrl} (${Object.keys(config.bots).length} bots)`));
+    console.log(`RakazoBridge on http://${HOST}:${PORT} → ${config.rakazoUrl} (${Object.keys(config.bots).length} bots)`));
 }

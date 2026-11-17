@@ -1,12 +1,12 @@
 # systemd user service: cp to ~/.config/systemd/user/, then
-#   systemctl --user daemon-reload && systemctl --user enable --now rakazo-bridge
+#   systemctl --user daemon-reload && systemctl --user enable --now RakazoBridge
 [Unit]
-Description=rakazo-bridge
+Description=RakazoBridge
 After=network-online.target
 
 [Service]
-WorkingDirectory=%h/rakazo-bridge
-EnvironmentFile=%h/rakazo-bridge/.env
+WorkingDirectory=%h/RakazoBridge
+EnvironmentFile=%h/RakazoBridge/.env
 ExecStart=/usr/bin/env node server.mjs
 Restart=on-failure
 
