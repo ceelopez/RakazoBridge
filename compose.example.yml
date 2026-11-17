@@ -1,0 +1,14 @@
+# docker compose -f compose.example.yml up -d
+services:
+  rakazo-bridge:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      BOTS_CONFIG: /config/bots.json
+    volumes:
+      - ./bots.json:/config/bots.json:ro
+    ports:
+      # Publish on a private interface only (LAN / Tailscale IP), never 0.0.0.0 on a public host.
+      - "127.0.0.1:7480:7480"

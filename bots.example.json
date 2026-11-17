@@ -1,0 +1,9 @@
+{
+  "rakazoUrl": "https://rakazo.example.com",
+  "bots": {
+    "assistant": {
+      "botId": "cm0000000000000000000000",
+      "webhookSecret": "paste the webhook secret from the bot's webhook routine"
+    }
+  }
+}
