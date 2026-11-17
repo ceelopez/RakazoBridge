@@ -34,7 +34,30 @@ npm start                       # or: docker compose -f compose.example.yml up -
 
 3. **Approval.** Webhook runs follow your approval mode. Add `reply_to_external_agent` to **Always allow**, or every reply will wait for a human.
 
-> Rakazo may refuse to call private or plain-HTTP tool URLs. If adding the OpenAPI source fails, serve the bridge over HTTPS on a hostname Rakazo can reach (a reverse proxy, a Cloudflare tunnel, `tailscale serve`, …). Expose only `/reply` and `/openapi.json` if it has to be public.
+### Letting Rakazo reach a private bridge
+
+By default, Rakazo refuses tool URLs on private addresses: localhost, LAN, Tailscale `100.x`, and docker networks. If the bridge runs on your own network, you have two options.
+
+- **Allow private endpoints.** In Rakazo's `.env`, set:
+
+  ```
+  MCP_ALLOW_PRIVATE_ENDPOINT=true
+  ```
+
+  Then restart the api and worker:
+
+  ```bash
+  docker compose --env-file .env -f docker-compose.images.yml up -d api worker
+  ```
+
+  Point the OpenAPI source at an address the Rakazo containers can reach, such as the host's LAN or Tailscale IP (`PUBLIC_URL`). The trade-off is that every bot's MCP and OpenAPI tools can now reach your private network.
+- **Serve the bridge over public HTTPS.** Use a reverse proxy or a Cloudflare tunnel, and expose only `/reply` and `/openapi.json`.
+
+To check that the Rakazo containers can reach the bridge:
+
+```bash
+docker exec rakazo-api-1 node -e 'fetch("http://<PUBLIC_URL host>:7480/health").then(r=>r.text()).then(console.log)'
+```
 
 ## Use it
 
